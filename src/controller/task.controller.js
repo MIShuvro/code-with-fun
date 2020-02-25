@@ -1,5 +1,15 @@
 const libphonenumber = require('libphonenumber-js')
 const bcrypt = require('bcryptjs')
+const validator = require('validator')
+const {
+    promisify
+} = require('util')
+const {
+    randomBytes
+} = require('crypto')
+const {
+    sendMailTest
+} = require('../utils/mail/sendGrid')
 const User = require('../models/tasks.model')
 
 const createUser = async (req, res) => {
@@ -70,11 +80,17 @@ const createUser = async (req, res) => {
     // Phone Number Can't Empty
     // valid Phone Number
     // Phone Number Should be unique
-
+    // Phone Number Must a number
     // src: https://www.npmjs.com/package/libphonenumber-js
     const isValidPhoneNumber = (number) => {
         return new libphonenumber.parsePhoneNumber(number).isValid()
     }
+
+    const isCheckNumber = () => {
+        let regx = '^[0-9+]*$';
+        return validator.matches(phone, regx)
+    }
+
 
     let isPhoneNumberExists = await User.find({
         phone
@@ -83,6 +99,8 @@ const createUser = async (req, res) => {
 
     if (phone.length === 0)
         req.check('phone', "Phone Number Can't Empty").custom(e => false)
+    else if (isCheckNumber() === false)
+        req.check('phone', "Phone Number must be Number").custom(e => false)
     else if (!isValidPhoneNumber(phone))
         req.check('phone', "Please Provide valid phone number").custom(e => false)
     else if (isPhoneNumberExists.length > 0)
@@ -91,13 +109,13 @@ const createUser = async (req, res) => {
     // Profile Photo
     // ---------------
     // Profile Photo can't Empty
-    let sampleFile = req.files.profilePhoto
-    sampleFile.mv('/filename.jpg', function (err) {
-        if (err)
-            return res.status(500).send(err);
+    // let sampleFile = req.files.profilePhoto
+    // sampleFile.mv('/filename.jpg', function (err) {
+    //     if (err)
+    //         return res.status(500).send(err);
 
-        console.log('uploaded')
-    });
+    //     console.log('uploaded')
+    // });
 
 
 
@@ -123,14 +141,18 @@ const createUser = async (req, res) => {
         });
     } else {
         // Here Everything is Correct now store user to DB
-        const newUser = new User({
+        const newuser = new User({
             name,
             username,
             email,
             phone,
             password: bcrypt.hashSync(password, 10)
         })
-        const user = await newUser.save()
+        const randombytespromisify = promisify(randomBytes)
+        const token = await randombytespromisify(25)
+        newuser.activationToken = token.toString('hex')
+        const user = await newuser.save()
+        sendMailTest(email, user)
         res.status(201).json({
             "code": 201,
             "status": "OK",
@@ -146,9 +168,23 @@ const getUser = async (req, res) => {
     console.log(user)
 }
 
+const activeToken = async (req, res) => {
+    let user = await User.findOne({
+        activationToken: req.query.token
+    })
+    if (!user) {
+        res.send('<h1>Invalid Activation Token.</h1>')
+    } else {
 
+        console.log(user)
+        user.activated = true
+        user.save()
+        res.send('Yes, redriect login page please wait')
+    }
+}
 
 module.exports = {
     createUser,
-    getUser
+    getUser,
+    activeToken
 }

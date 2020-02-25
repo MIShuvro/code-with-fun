@@ -31,6 +31,11 @@ const tasksSchema = new mongoose.Schema({
     confirm: {
         type: String,
         trim: true
+    },
+    activationToken: String,
+    activated: {
+        type: Boolean,
+        default: false
     }
 })
 

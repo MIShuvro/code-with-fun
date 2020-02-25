@@ -2,9 +2,11 @@ const Router = require('express').Router()
 
 const {
     createUser,
-    getUser
-} = require('../controller/task.controller')
+    getUser,
+    activeToken
 
-Router.post('/user/add', createUser)
+} = require('../controller/task.controller')
+Router.post('/user/auth', createUser)
+Router.get('/user/auth/activateAccount', activeToken)
 Router.get('/user', getUser)
 module.exports = Router
