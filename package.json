@@ -19,7 +19,7 @@
     "express-validator": "^5.3.1",
     "libphonenumber-js": "^1.7.39",
     "mongoose": "^5.8.11",
-    "validator": "^12.2.0"
+    "validator": "^13.7.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.2"
